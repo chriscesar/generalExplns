@@ -25,11 +25,12 @@ df0 %>%
   select(.,-c(`DIN (umol)`)) %>% 
   ungroup() %>% distinct() %>% 
   group_by(WB_Name) %>% 
-  filter(n() >= 3) -> df_trim
+  filter(n() >= 3) %>% 
+  arrange(WB_Name, Year) -> df_trim
 
 
-x <- df_trim[df_trim$WB_Name=="ADUR",]
-d <- mk.test(x$mean_DIN)
+# x <- df_trim[df_trim$WB_Name=="ADUR",]
+# d <- mk.test(x$mean_DIN)
 
 # ###medians
 # tic()
@@ -196,6 +197,8 @@ for(name in unique(df_trim$WB_Name)) {
 # Print the final table
 print(trend_results)
 
+write.csv(trend_results, file="plots/trend_results.csv",row.names = FALSE)
+
 # create trend plot for each level of WB_Name
 # Create a folder to store the plots if it doesn't exist
 if (!file.exists("plots")) {
@@ -207,6 +210,8 @@ for(name in unique(df_trim$WB_Name)) {
   # Replace "/" slashes with another character (e.g., "_")
   sanitized_name <- gsub("/", "_", name)
   
+  trend_results_section <- subset(trend_results, WB_Name == name)
+  
   # Subset data for current WB_Name
   wb_data <- subset(df_trim, WB_Name == name)
   
@@ -214,19 +219,27 @@ for(name in unique(df_trim$WB_Name)) {
   mk.test <- trend::mk.test(wb_data$median_DIN)
   
   # Extract S statistic and p-value
+  samp_n <- count(wb_data)[2]
   S <- round(mk.test$statistic, 3)
   p_value <- round(mk.test$p.value, 4)
+  tau <- round(mk.test$estimates[3], 3)
   
   # Create a plot
   p <- ggplot(wb_data, aes(x = Year, y = median_DIN)) +
     geom_point() +
+    ylim(0,NA)+
     geom_smooth(method = "lm", se = FALSE) + # Add a linear trend line
     labs(title = paste(name),
-         subtitle = paste("S =", S, ", p =", p_value),
+         subtitle = paste0("n = ", samp_n, ", S = ", S,", tau = ",tau, ", p = ", p_value,trend_results_section$sig),
+         caption = "Trend calculations are based on median winter DIN concentrations for each calendar year",
          x = "Year",
          y = "DIN (umol)")
   
   # Export the plot to a file with the sanitized WB_Name value in the filename
   ggsave(paste("plots/", sanitized_name, ".png", sep = ""), plot = p, width = 8, height = 6)
 }
+
 toc()
+
+# tidy up ####
+rm(list = ls(pattern = "^df"))
