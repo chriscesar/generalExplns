@@ -7,6 +7,7 @@ vapply(ld_pkgs, library, logical(1L),
        character.only = TRUE, logical.return = TRUE)
 rm(ld_pkgs)
 
+tic()#start timer
 theme_set(ggthemes::theme_few())
 
 ### load data
@@ -67,12 +68,93 @@ d <- mk.test(x$mean_DIN)
 # 
 
 # Create an empty data frame to store results
+# trend_results <- data.frame(WB_Name = character(),
+#                             S = numeric(),
+#                             p.value = numeric(),
+#                             n=numeric(),
+#                             statname=character(),
+#                             tau=numeric(),
+#                             significance = character(),
+#                             stringsAsFactors = FALSE)
+
+# # Loop through unique WB_Names
+# for(name in unique(df_trim$WB_Name)) {
+#   # Subset data for current WB_Name
+#   wb_data <- subset(df_trim, WB_Name == name)
+#   
+#   # Perform Mann-Kendall trend test
+#   mk.test <- mk.test(wb_data$median_DIN)
+#   
+#   # Extract S statistic, p-value, and Sen's Slope
+#   n <- mk.test$parameter
+#   S <- round(mk.test$statistic,3)
+#   p_value <- round(mk.test$p.value,4)
+#   tau <- round(mk.test$estimates[3],3)
+#   statname <- names(mk.test$statistic)
+#   
+#   # Determine significance level
+#   significance <- ifelse(p_value < 0.001, "***",
+#                          ifelse(p_value < 0.01, "**",
+#                                 ifelse(p_value < 0.05, "*",
+#                                        ifelse(p_value < 0.1, "+", ""))))
+#   
+#   # Compute min and max Year values within each level of WB_Name
+#   min_year <- min(wb_data$Year)
+#   max_year <- max(wb_data$Year)
+#   
+#   # Add results for current WB_Name to trend_results
+#   trend_results <- rbind(trend_results, data.frame(WB_Name = name, n=n,
+#                                                    min_year = min_year,
+#                                                    max_year = max_year,
+#                                                    # stat=statname,
+#                                                    S = S,
+#                                                    tau=tau,
+#                                                    p.value = p_value,
+#                                                    sig = significance))
+# }
+# 
+# # Print the final table
+# print(trend_results)
+# 
+# toc()#stop timer
+# 
+# #### create trend plot for each level of WB_Name
+# # Create a folder to store the plots if it doesn't exist
+# tic()
+# if (!file.exists("plots")) {
+#   dir.create("plots")
+# }
+# 
+# # Loop through unique WB_Names
+# for(name in unique(df_trim$WB_Name)) {
+#   # Replace "/" slashes with another character (e.g., "_")
+#   sanitized_name <- str_replace_all(name, "/", "_")
+#   
+#   # Subset data for current WB_Name
+#   wb_data <- subset(df_trim, WB_Name == name)
+#   
+#   # Create a plot
+#   p <- ggplot(wb_data, aes(x = Year, y = median_DIN)) +
+#     geom_point() +
+#     geom_smooth(method = "lm", se = FALSE) + # Add a linear trend line
+#     labs(title = paste(name),
+#          x = "Year",
+#          y = "DIN (umol)")
+#   
+#   # Export the plot to a file with the sanitized WB_Name value in the filename
+#   ggsave(paste("plots/", sanitized_name, ".png", sep = ""), plot = p, width = 8, height = 6)
+# }
+# toc()
+
+######################
+# Create an empty data frame to store results
 trend_results <- data.frame(WB_Name = character(),
                             S = numeric(),
                             p.value = numeric(),
-                            n=numeric(),
-                            statname=character(),
-                            tau=numeric(),
+                            n = numeric(),
+                            statname = character(),
+                            tau = numeric(),
+                            significance = character(),
                             stringsAsFactors = FALSE)
 
 # Loop through unique WB_Names
@@ -81,25 +163,70 @@ for(name in unique(df_trim$WB_Name)) {
   wb_data <- subset(df_trim, WB_Name == name)
   
   # Perform Mann-Kendall trend test
-  mk.test <- mk.test(wb_data$median_DIN)
+  mk.test <- trend::mk.test(wb_data$median_DIN)
   
   # Extract S statistic, p-value, and Sen's Slope
   n <- mk.test$parameter
-  S <- mk.test$statistic
-  p_value <- mk.test$p.value
-  tau <- mk.test$estimates[3]
+  S <- round(mk.test$statistic, 3)
+  p_value <- round(mk.test$p.value, 4)
+  tau <- round(mk.test$estimates[3], 3)
   statname <- names(mk.test$statistic)
   
+  # Determine significance level
+  significance <- ifelse(p_value < 0.001, "***",
+                         ifelse(p_value < 0.01, "**",
+                                ifelse(p_value < 0.05, "*",
+                                       ifelse(p_value < 0.1, "+", ""))))
+  
+  # Compute min and max Year values within each level of WB_Name
+  min_year <- min(wb_data$Year)
+  max_year <- max(wb_data$Year)
+  
   # Add results for current WB_Name to trend_results
-  trend_results <- rbind(trend_results, data.frame(WB_Name = name, n=n,
-                                                   stat=statname,
+  trend_results <- rbind(trend_results, data.frame(WB_Name = name, n = n,
+                                                   min_year = min_year,
+                                                   max_year = max_year,
+                                                   # stat=statname,
                                                    S = S,
-                                                   tau=tau,
-                                                   p.value = p_value))
+                                                   tau = tau,
+                                                   p.value = p_value,
+                                                   sig = significance))
 }
 
 # Print the final table
 print(trend_results)
 
+# create trend plot for each level of WB_Name
+# Create a folder to store the plots if it doesn't exist
+if (!file.exists("plots")) {
+  dir.create("plots")
+}
 
-
+# Loop through unique WB_Names
+for(name in unique(df_trim$WB_Name)) {
+  # Replace "/" slashes with another character (e.g., "_")
+  sanitized_name <- gsub("/", "_", name)
+  
+  # Subset data for current WB_Name
+  wb_data <- subset(df_trim, WB_Name == name)
+  
+  # Perform Mann-Kendall trend test
+  mk.test <- trend::mk.test(wb_data$median_DIN)
+  
+  # Extract S statistic and p-value
+  S <- round(mk.test$statistic, 3)
+  p_value <- round(mk.test$p.value, 4)
+  
+  # Create a plot
+  p <- ggplot(wb_data, aes(x = Year, y = median_DIN)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) + # Add a linear trend line
+    labs(title = paste(name),
+         subtitle = paste("S =", S, ", p =", p_value),
+         x = "Year",
+         y = "DIN (umol)")
+  
+  # Export the plot to a file with the sanitized WB_Name value in the filename
+  ggsave(paste("plots/", sanitized_name, ".png", sep = ""), plot = p, width = 8, height = 6)
+}
+toc()
