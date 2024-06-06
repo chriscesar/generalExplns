@@ -126,6 +126,16 @@ df0 %>% filter(., year %in% c(2019:2023)) %>%
   pivot_wider(.,names_from = year, values_from = mean) %>% 
   write.csv(.,file="plots/ver4/no3_by_wb-by_year.csv",row.names = FALSE)
 
+### create table of means by WB by year years
+df0 %>% 
+  dplyr::select(.,wfd_region,water_body,year,nitrate_use) %>% 
+  group_by(wfd_region,water_body,year) %>% 
+  summarise(mean=mean(nitrate_use)) %>% 
+  mutate(year = factor(year, levels = sort(unique(year)))) %>% 
+  pivot_wider(.,names_from = year, values_from = mean) %>% 
+  write.csv(.,file="plots/ver4/no3_by_wb-by_year_All.csv",row.names = FALSE)
+
+
 (x <- unlist(tictoc::tic.log()))
 
 ### tidy up
