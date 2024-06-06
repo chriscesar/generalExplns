@@ -90,7 +90,8 @@ for(name in unique(df0$water_body)) {
       y = nitrate_use
       )
       )+
-    geom_boxplot(outlier.colour = NA)+
+    geom_boxplot(varwidth = TRUE,
+                 outlier.colour = NA)+
     geom_point(
     aes(colour=Season,
         shape=Season),
@@ -111,10 +112,19 @@ for(name in unique(df0$water_body)) {
     strip.text = element_text(face=2)
   ) -> p
   # Export the plot to a file with the sanitized WB_Name value in the filename
-  ggsave(paste("plots/ver4/NO3_box_", sanitized_name, ".png", sep = ""),
+  ggsave(paste("plots/ver4/NO3_box_all_", sanitized_name, ".png", sep = ""),
          plot = p, width = 10, height = 6)
   toc(log=TRUE)
+  flush.console()
 }
+
+### create table of means by WB over 5 years
+df0 %>% filter(., year %in% c(2019:2023)) %>% 
+  dplyr::select(.,water_body,year,nitrate_use) %>% 
+  group_by(water_body,year) %>% 
+  summarise(mean=mean(nitrate_use)) %>% 
+  pivot_wider(.,names_from = year, values_from = mean) %>% 
+  write.csv(.,file="plots/ver4/no3_by_wb-by_year.csv",row.names = FALSE)
 
 (x <- unlist(tictoc::tic.log()))
 
