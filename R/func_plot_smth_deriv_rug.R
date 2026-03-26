@@ -27,10 +27,35 @@ plot_smth_deriv_rug <- function(
     show_chpt = TRUE,
     x_rug = TRUE,
     y_rug = TRUE,
-    
-    response_scale = c("link", "response")   # NEW argument
+    response_scale = c("link", "response"),   # NEW argument
+    load_pkgs = TRUE
     
 ) {
+  
+  
+  # ============================================================
+  # Load required packages
+  # ============================================================
+  if (load_pkgs) {
+    pkgs <- c(
+      "dplyr", "stringr", "tibble", "tidyr",
+      "tidyselect", "ggplot2", "ggthemes", "mgcv"
+    )
+    
+    missing <- pkgs[!sapply(pkgs, requireNamespace, quietly = TRUE)]
+    
+    if (length(missing) > 0) {
+      stop(
+        "Missing required packages: ",
+        paste(missing, collapse = ", "),
+        "\nPlease install them before continuing.",
+        call. = FALSE
+      )
+    }
+    
+    invisible(lapply(pkgs, library, character.only = TRUE))
+  }
+  
   facet <- match.arg(facet)
   response_scale <- match.arg(response_scale) # NEW argument
   
@@ -145,9 +170,9 @@ plot_smth_deriv_rug <- function(
     # Faceting
     {
       if (facet == ".smooth_trim") {
-        ggplot2::facet_wrap(~ .smooth_trim, scales = "free_x")
+        ggplot2::facet_wrap(~ .smooth_trim, scales = "free")
       } else {
-        ggplot2::facet_wrap(~ .smooth, scales = "free_x")
+        ggplot2::facet_wrap(~ .smooth, scales = "free")
       }
     } +
     
@@ -178,3 +203,28 @@ plot_smth_deriv_rug <- function(
   
   return(p)
 }
+
+# EXAMPLES #####
+## not run ####
+### simple GAM  ####
+### One continuous predictor
+### Generate model
+# fit <- mgcv::gam(Ozone ~ s(Temp), data = airquality)
+# fit <- mgcv::gam(Ozone ~ s(Wind), data = airquality)
+# plot_smth_deriv_rug(fit,response_scale = "response")
+
+### Two continuous predictors
+### Generate model
+# fit <- mgcv::gam(Volume ~ s(Girth) + s(Height), data = trees)
+# plot_smth_deriv_rug(fit,response_scale = "response")
+
+# lynx.dat <- data.frame(lynx = lynx, year = seq(1:length(lynx)),
+#                        var = rpois(n = length(lynx),lambda = 10 ))
+# fit <- mgcv::gam(lynx ~ s(year) + s(var),family=poisson(),data = lynx.dat)
+# plot_smth_deriv_rug(fit,
+#                     response_scale = "response"
+#                     )
+
+# TO DO ####
+# Add argument in plot_smth_deriv_rug on whether to scale each plot facet individually
+# If response_scale is "response", suggest "free_y", otherwise allow "fixed"
