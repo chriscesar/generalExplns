@@ -18,7 +18,26 @@
 #' derivative (increasing/decreasing) switches between adjacent evaluated
 #' points, based on simultaneous confidence intervals.
 
-smth_deriv <- function(mod,n=400){
+smth_deriv <- function(mod, n=400, load_pkgs = TRUE){
+  
+  
+  # ---- Load required packages (if requested) ----
+  if (load_pkgs) {
+    pkgs <- c("gratia", "dplyr", "stringr", "stats")
+    missing <- pkgs[!sapply(pkgs, requireNamespace, quietly = TRUE)]
+    
+    if (length(missing) > 0) {
+      stop(
+        "The following required packages are missing: ",
+        paste(missing, collapse = ", "),
+        "\nPlease install them before continuing.",
+        call. = FALSE
+      )
+    }
+    
+    invisible(lapply(pkgs, library, character.only = TRUE))
+  }
+  
   # --- 1) Get smooth estimates (values of the smooth for each term across its grid) ---
   # This pulls out the marginal smooth estimates for each smooth term at 'n' points,
   # adds the response variable name, removes random effects and all-NA columns,
